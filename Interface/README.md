@@ -38,7 +38,11 @@ The server will load the models, thresholds, and start listening:
 
 ### 2. Open the Dashboard
 
-![Dashboard](dashboard.png)
+Output on English Audio Clip
+![Dashboard](english_dashboard.png)
+
+Output on Hindi Audio Clip
+![Dashboard](hindi_dashboard.png)
 Open your web browser and navigate to:
 [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
