@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EOT Detection Live Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Wavesurfer.js -->
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.35);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.35);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.3);
+            --danger: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --sidebar-width: 320px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        /* Custom Scrollbar */
+        *::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
+        }
+
+        /* Header styling */
+        header {
+            padding: 1.25rem 2rem;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            position: sticky;
+            top: 0;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .logo-icon i {
+            color: white;
+            width: 22px;
+            height: 22px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #c084fc, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Layout structure */
+        .app-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 73px);
+            position: relative;
+        }
+
+        /* Sidebar Control Panel */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(15, 23, 42, 0.8);
+            border-right: 1px solid var(--card-border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Form elements */
+        .glass-select, .glass-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .glass-select:focus, .glass-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-select option {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        /* Custom buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--card-border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-recording {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Turn Sample list in sidebar */
+        .sample-list-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem;
+            max-height: 250px;
+        }
+
+        .sample-item {
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8125rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            border: 1px solid transparent;
+        }
+
+        .sample-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sample-item.active {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: white;
+            font-weight: 600;
+        }
+
+        .lang-badge {
+            font-size: 0.6875rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .lang-en { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .lang-hi { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+        /* Main Workspace Panel */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        /* Glassmorphic Panel Wrapper */
+        .glass-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Waveform Player Section */
+        .player-panel {
+            position: relative;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .player-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .waveform-container {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        #waveform {
+            width: 100%;
+            height: 100px;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .playback-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .time-display {
+            font-size: 0.8125rem;
+            font-family: monospace;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Pause Selection List */
+        .pauses-container {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding: 0.25rem 0.25rem 0.75rem 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .pause-card {
+            flex: 0 0 160px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .pause-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .pause-card.active {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.15);
+        }
+
+        .pause-card-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .pause-card-time {
+            font-size: 1.125rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .pause-card-label {
+            display: inline-block;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .label-hold { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .label-eot { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+
+        /* Prediction Comparison Arena */
+        .arena-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .model-card {
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .model-card.combined {
+            border-top: 3px solid var(--primary);
+        }
+
+        .model-card.en_only {
+            border-top: 3px solid var(--secondary);
+        }
+
+        .model-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        /* EOT decision glow */
+        .model-card.decision-eot::before {
+            background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.08), transparent 70%);
+            opacity: 1;
+        }
+        /* HOLD decision glow */
+        .model-card.decision-hold::before {
+            background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.08), transparent 70%);
+            opacity: 1;
+        }
+
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .model-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .model-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.125rem;
+        }
+
+        .decision-badge {
+            font-size: 0.8125rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 0.375rem 0.875rem;
+            border-radius: 8px;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .badge-hold {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-eot {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Meter Section */
+        .prob-section {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .prob-radial-container {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prob-svg {
+            transform: rotate(-90deg);
+            width: 80px;
+            height: 80px;
+        }
+
+        .prob-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 8;
+        }
+
+        .prob-circle-val {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 226;
+            stroke-dashoffset: 226;
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .combined .prob-circle-val { stroke: var(--primary); }
+        .en_only .prob-circle-val { stroke: var(--secondary); }
+
+        .prob-value-text {
+            position: absolute;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .prob-stats {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .prob-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .prob-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 0.25rem;
+        }
+
+        .prob-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .combined .prob-bar { background: var(--primary); }
+        .en_only .prob-bar { background: var(--secondary); }
+
+        /* Parameters info list */
+        .params-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .param-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8125rem;
+        }
+
+        .param-label {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .param-val {
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .match-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            margin-top: auto;
+            padding-top: 0.5rem;
+            border-top: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+
+        .indicator-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .indicator-success { background-color: var(--success); }
+        .indicator-fail { background-color: var(--danger); }
+
+        /* Feature Dashboard Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .feature-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .feature-name {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .feature-desc-trigger {
+            color: var(--text-muted);
+            cursor: help;
+            font-size: 0.75rem;
+        }
+
+        .feature-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: monospace;
+            letter-spacing: -0.03em;
+            margin-top: 0.25rem;
+        }
+
+        .feature-value.nan {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .feature-desc-text {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 1rem;
+        }
+
+        .empty-state i {
+            width: 48px;
+            height: 48px;
+            color: rgba(255, 255, 255, 0.1);
+        }
+
+        .empty-state h3 {
+            color: var(--text-main);
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .feature-card-glow {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: auto;
+        }
+
+        .feature-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            border-radius: 999px;
+            transition: width 0.5s ease;
+        }
+
+        /* Comparison Table Styles */
+        .comparison-table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.8125rem;
+        }
+
+        .comparison-table th {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .comparison-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .comparison-table tbody tr {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .comparison-table tbody tr.active {
+            background: rgba(139, 92, 246, 0.08);
+        }
+        
+        .comparison-table tbody tr.active td {
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        .prob-badge {
+            font-family: monospace;
+            font-weight: 700;
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+
+        .prob-badge-high {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+        }
+
+        .prob-badge-low {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-container">
+            <div class="logo-icon">
+                <i data-lucide="activity"></i>
+            </div>
+            <div>
+                <h1>EOT Detection Dashboard</h1>
+                <span class="header-tag">Live Testing & Verification Arena</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div class="time-display" id="connection-status">
+                <span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
+                Local Server Active
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <!-- Mode Toggle -->
+            <div class="sidebar-section">
+                <span class="sidebar-section-title">
+                    <i data-lucide="layers" style="width: 14px; height: 14px;"></i> Testing Mode
+                </span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary" id="mode-predefined-btn" style="flex: 1; font-size: 0.75rem; padding: 0.5rem 0.75rem;">
+                        Predefined Dataset
+                    </button>
+                    <button class="btn btn-secondary" id="mode-custom-btn" style="flex: 1; font-size: 0.75rem; padding: 0.5rem 0.75rem;">
+                        Custom Input
+                    </button>
+                </div>
+            </div>
+
+            <!-- Predefined Dataset Controls -->
+            <div id="section-predefined" class="sidebar-section">
+                <span class="sidebar-section-title">
+                    <i data-lucide="globe" style="width: 14px; height: 14px;"></i> Select Language
+                </span>
+                <select class="glass-select" id="lang-select">
+                    <option value="all">All Languages</option>
+                    <option value="english">English (en__)</option>
+                    <option value="hindi">Hindi (hi__)</option>
+                </select>
+
+                <span class="sidebar-section-title" style="margin-top: 0.5rem;">
+                    <i data-lucide="list" style="width: 14px; height: 14px;"></i> Predefined Turns
+                </span>
+                <input class="glass-input" type="text" id="turn-search" placeholder="Search turn ID (e.g. en__002)..." style="padding: 0.5rem 0.75rem; font-size: 0.8125rem; margin-bottom: 0.25rem;">
+                <div class="sample-list-container" id="sample-list">
+                    <!-- Loaded dynamically -->
+                    <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8125rem;">
+                        Loading dataset samples...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Input Controls -->
+            <div id="section-custom" class="sidebar-section" style="display: none;">
+                <span class="sidebar-section-title">
+                    <i data-lucide="mic" style="width: 14px; height: 14px;"></i> Voice Recorder
+                </span>
+                <button class="btn btn-danger" id="record-btn" style="width: 100%;">
+                    <i data-lucide="mic"></i> Start Recording
+                </button>
+                <div id="recording-status" style="font-size: 0.75rem; text-align: center; color: var(--text-muted); display: none;">
+                    00:00
+                </div>
+
+                <span class="sidebar-section-title" style="margin-top: 0.5rem;">
+                    <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Upload WAV File
+                </span>
+                <input type="file" id="audio-upload" accept="audio/wav" style="display: none;">
+                <button class="btn btn-secondary" onclick="document.getElementById('audio-upload').click()" style="width: 100%;">
+                    <i data-lucide="file-audio"></i> Choose File
+                </button>
+                <div id="upload-filename" style="font-size: 0.75rem; text-align: center; color: var(--text-muted); margin-top: 0.25rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    No file selected
+                </div>
+
+                <span class="sidebar-section-title" style="margin-top: 0.75rem;">
+                    <i data-lucide="sliders" style="width: 14px; height: 14px;"></i> Custom Parameters
+                </span>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div>
+                        <label style="font-size: 0.6875rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">
+                            Pause Start Time (seconds)
+                        </label>
+                        <input class="glass-input" type="number" id="custom-pause-start" step="0.1" min="0.1" value="1.0" style="padding: 0.5rem;">
+                        <span style="font-size: 0.625rem; color: var(--text-muted);">Defaults to end of audio if empty</span>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.6875rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">
+                            Pause Duration (seconds)
+                        </label>
+                        <input class="glass-input" type="number" id="custom-pause-dur" step="0.05" min="0.05" value="0.5" style="padding: 0.5rem;">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="analyze-custom-btn" style="width: 100%; margin-top: 0.5rem;" disabled>
+                    <i data-lucide="play"></i> Analyze Custom Audio
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main workspace -->
+        <main class="main-content">
+            <!-- Active Turn Waveform Player -->
+            <section class="glass-panel player-panel">
+                <div class="player-header">
+                    <h2 class="player-title" id="active-turn-title">
+                        <i data-lucide="music" style="color: var(--primary);"></i> Select a Turn to Begin
+                    </h2>
+                    <div class="time-display" id="waveform-time">0:00 / 0:00</div>
+                </div>
+
+                <div class="waveform-container">
+                    <div id="waveform"></div>
+                </div>
+
+                <div class="player-controls">
+                    <div class="playback-buttons">
+                        <button class="btn btn-secondary" id="play-btn" disabled>
+                            <i data-lucide="play" id="play-icon"></i> Play
+                        </button>
+                        <button class="btn btn-secondary" id="zoom-in-btn" style="padding: 0.5rem;" title="Zoom In">
+                            <i data-lucide="zoom-in" style="width:16px; height:16px;"></i>
+                        </button>
+                        <button class="btn btn-secondary" id="zoom-out-btn" style="padding: 0.5rem;" title="Zoom Out">
+                            <i data-lucide="zoom-out" style="width:16px; height:16px;"></i>
+                        </button>
+                    </div>
+
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="info" style="width: 14px; height: 14px;"></i>
+                        <span>Click anywhere on waveform to place pause cursor</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pause list selector (only visible for predefined mode) -->
+            <section class="glass-panel" id="pauses-list-section" style="display: none;">
+                <h3 style="font-size: 0.875rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-muted); text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Pauses in this Turn (Simultaneous Model Comparison)</span>
+                    <span style="font-size: 0.75rem; font-weight: 500; text-transform: none; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                        <i data-lucide="info" style="width:12px; height:12px;"></i> Click a row to view features & circular gauges
+                    </span>
+                </h3>
+                
+                <div class="comparison-table-container">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Pause</th>
+                                <th>Start Time</th>
+                                <th>Duration</th>
+                                <th>Actual Type</th>
+                                <th>Combined Model (Our Model)</th>
+                                <th>English-Only Model (Baseline)</th>
+                                <th style="text-align: center;">Our Match</th>
+                                <th style="text-align: center;">Baseline Match</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Prediction Arena (Comparison side-by-side) -->
+            <section class="arena-grid" id="arena-section" style="display: none;">
+                <!-- Combined Model -->
+                <div class="model-card combined" id="model-card-combined">
+                    <div class="model-header">
+                        <div>
+                            <h3 class="model-name">Combined Model</h3>
+                            <div class="model-subtitle">Trained on EN + HI combined (weights=2x HI)</div>
+                        </div>
+                        <span class="decision-badge" id="combined-decision-badge">No Data</span>
+                    </div>
+
+                    <div class="prob-section">
+                        <div class="prob-radial-container">
+                            <svg class="prob-svg">
+                                <circle class="prob-circle-bg" cx="40" cy="40" r="36" />
+                                <circle class="prob-circle-val" id="combined-circle" cx="40" cy="40" r="36" />
+                            </svg>
+                            <span class="prob-value-text" id="combined-prob-text">-%</span>
+                        </div>
+                        <div class="prob-stats">
+                            <div class="prob-label">EOT Probability</div>
+                            <div class="prob-bar-container">
+                                <div class="prob-bar" id="combined-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="params-list">
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="alert-triangle" style="width:12px; height:12px;"></i> Threshold (T)</span>
+                            <span class="param-val" id="combined-param-t">-</span>
+                        </div>
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="clock" style="width:12px; height:12px;"></i> Operating Delay (D)</span>
+                            <span class="param-val" id="combined-param-d">-</span>
+                        </div>
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="timer" style="width:12px; height:12px;"></i> Pause Duration</span>
+                            <span class="param-val" id="combined-param-dur">-</span>
+                        </div>
+                    </div>
+
+                    <div class="match-indicator" id="combined-match" style="display: none;">
+                        <!-- Decided dynamically -->
+                    </div>
+                </div>
+
+                <!-- English Only Model -->
+                <div class="model-card en_only" id="model-card-en_only">
+                    <div class="model-header">
+                        <div>
+                            <h3 class="model-name">English-Only Model</h3>
+                            <div class="model-subtitle">Trained solely on English datasets</div>
+                        </div>
+                        <span class="decision-badge" id="en_only-decision-badge">No Data</span>
+                    </div>
+
+                    <div class="prob-section">
+                        <div class="prob-radial-container">
+                            <svg class="prob-svg">
+                                <circle class="prob-circle-bg" cx="40" cy="40" r="36" />
+                                <circle class="prob-circle-val" id="en_only-circle" cx="40" cy="40" r="36" />
+                            </svg>
+                            <span class="prob-value-text" id="en_only-prob-text">-%</span>
+                        </div>
+                        <div class="prob-stats">
+                            <div class="prob-label">EOT Probability</div>
+                            <div class="prob-bar-container">
+                                <div class="prob-bar" id="en_only-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="params-list">
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="alert-triangle" style="width:12px; height:12px;"></i> Threshold (T)</span>
+                            <span class="param-val" id="en_only-param-t">-</span>
+                        </div>
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="clock" style="width:12px; height:12px;"></i> Operating Delay (D)</span>
+                            <span class="param-val" id="en_only-param-d">-</span>
+                        </div>
+                        <div class="param-row">
+                            <span class="param-label"><i data-lucide="timer" style="width:12px; height:12px;"></i> Pause Duration</span>
+                            <span class="param-val" id="en_only-param-dur">-</span>
+                        </div>
+                    </div>
+
+                    <div class="match-indicator" id="en_only-match" style="display: none;">
+                        <!-- Decided dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feature Panel Grid -->
+            <section class="glass-panel" id="features-section" style="display: none;">
+                <h3 style="font-size: 0.875rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text-muted); text-transform: uppercase;">
+                    Extracted Causal Features
+                </h3>
+                <div class="feature-grid" id="feature-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- Empty State placeholder -->
+            <section class="glass-panel" id="empty-workspace-state">
+                <div class="empty-state">
+                    <i data-lucide="arrow-left-right"></i>
+                    <h3>No Active Analysis</h3>
+                    <p>Select a predefined turn from the dataset in the sidebar, or record/upload your own audio to perform live EOT detection.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // Global variables
+        let wavesurfer = null;
+        let datasetSamples = {};
+        let activeTurnId = null;
+        let activeLang = null;
+        let activePauseIndex = null;
+        let testingMode = 'predefined'; // 'predefined' or 'custom'
+        
+        // Custom recording states
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordStartTime = null;
+        let recordInterval = null;
+        let recordedWavBlob = null;
+        let audioContext = null;
+
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initWavesurfer();
+            loadSamples();
+            setupEventHandlers();
+        });
+
+        function initWavesurfer() {
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#4f46e5',
+                progressColor: '#8b5cf6',
+                cursorColor: '#06b6d4',
+                cursorWidth: 2,
+                barWidth: 2,
+                barGap: 3,
+                barRadius: 3,
+                height: 100,
+                normalize: true,
+                backend: 'WebAudio'
+            });
+
+            wavesurfer.on('audioprocess', () => {
+                updatePlaybackTime();
+            });
+
+            wavesurfer.on('ready', () => {
+                updatePlaybackTime();
+                document.getElementById('play-btn').disabled = false;
+            });
+
+            wavesurfer.on('finish', () => {
+                document.getElementById('play-icon').setAttribute('data-lucide', 'play');
+                lucide.createIcons();
+            });
+
+            wavesurfer.on('interaction', (newTime) => {
+                // If custom mode, update pause start time input when user clicks on waveform
+                if (testingMode === 'custom') {
+                    document.getElementById('custom-pause-start').value = newTime.toFixed(2);
+                    enableAnalyzeButton();
+                }
+            });
+        }
+
+        function updatePlaybackTime() {
+            const current = wavesurfer.getCurrentTime();
+            const duration = wavesurfer.getDuration();
+            document.getElementById('waveform-time').innerText = `${formatTime(current)} / ${formatTime(duration)}`;
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 100);
+            return `${min}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        }
+
+        // Fetch dataset samples from backend
+        async function loadSamples() {
+            try {
+                const response = await fetch('/api/samples');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    datasetSamples = data.samples;
+                    renderSampleList();
+                }
+            } catch (err) {
+                console.error("Failed to load samples", err);
+            }
+        }
+
+        function renderSampleList() {
+            const searchVal = document.getElementById('turn-search').value.toLowerCase();
+            const langVal = document.getElementById('lang-select').value;
+            const container = document.getElementById('sample-list');
+            
+            container.innerHTML = '';
+            
+            const filtered = Object.values(datasetSamples).filter(sample => {
+                const idMatch = sample.turn_id.toLowerCase().includes(searchVal);
+                const langMatch = langVal === 'all' || sample.language === langVal;
+                return idMatch && langMatch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8125rem;">No turns match search.</div>`;
+                return;
+            }
+
+            // Sort turns: English first, then Hindi
+            filtered.sort((a, b) => a.turn_id.localeCompare(b.turn_id));
+
+            filtered.forEach(sample => {
+                const item = document.createElement('div');
+                item.className = 'sample-item';
+                if (sample.turn_id === activeTurnId) item.className += ' active';
+                
+                const badgeClass = sample.language === 'english' ? 'lang-en' : 'lang-hi';
+                const labelText = sample.language === 'english' ? 'EN' : 'HI';
+                
+                item.innerHTML = `
+                    <span>${sample.turn_id}</span>
+                    <span class="lang-badge ${badgeClass}">${labelText}</span>
+                `;
+                
+                item.addEventListener('click', () => {
+                    selectPredefinedTurn(sample.turn_id);
+                });
+                
+                container.appendChild(item);
+            });
+        }
+
+        // Select a predefined turn
+        async function selectPredefinedTurn(turnId) {
+            const sample = datasetSamples[turnId];
+            if (!sample) return;
+
+            activeTurnId = turnId;
+            activeLang = sample.language;
+            activePauseIndex = null;
+            
+            // Highlight in list
+            document.querySelectorAll('.sample-item').forEach(el => {
+                if (el.querySelector('span').innerText === turnId) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Update UI
+            document.getElementById('active-turn-title').innerHTML = `
+                <i data-lucide="music" style="color: var(--primary);"></i> ${turnId} 
+                <span class="lang-badge ${sample.language === 'english' ? 'lang-en' : 'lang-hi'}" style="margin-left: 0.5rem;">
+                    ${sample.language === 'english' ? 'English' : 'Hindi'}
+                </span>
+            `;
+            lucide.createIcons();
+
+            // Load audio into Wavesurfer
+            const audioUrl = `/api/audio/${sample.language}/${sample.audio_file.split('/').pop()}`;
+            wavesurfer.load(audioUrl);
+
+            // Reset play button icon
+            document.getElementById('play-icon').setAttribute('data-lucide', 'play');
+            lucide.createIcons();
+
+            // Show table section and loading state
+            document.getElementById('pauses-list-section').style.display = 'block';
+            document.getElementById('empty-workspace-state').style.display = 'none';
+            document.getElementById('arena-section').style.display = 'none';
+            document.getElementById('features-section').style.display = 'none';
+            
+            const tbody = document.getElementById('comparison-table-body');
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">Running simultaneous feature extraction and predictions...</td></tr>`;
+
+            try {
+                const response = await fetch('/api/predict/turn', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        language: activeLang,
+                        turn_id: activeTurnId
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    renderComparisonTable(data.pauses);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--danger);">Error: ${data.error}</td></tr>`;
+                }
+            } catch (err) {
+                console.error("Failed to fetch turn predictions", err);
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to connect to server.</td></tr>`;
+            }
+        }
+
+        // Render the comparison table for all pauses in the turn
+        function renderComparisonTable(pauses) {
+            const tbody = document.getElementById('comparison-table-body');
+            tbody.innerHTML = '';
+
+            if (pauses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">No pauses found in this turn.</td></tr>`;
+                return;
+            }
+
+            pauses.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.id = `pause-row-${p.pause_index}`;
+                
+                const actualLabelClass = p.label === 'hold' ? 'label-hold' : 'label-eot';
+                
+                // Combined model details
+                const combPred = p.predictions.combined;
+                const combDecisionUpper = combPred.available ? combPred.decision.toUpperCase() : 'N/A';
+                const combDecisionClass = combPred.decision === 'eot' ? 'label-eot' : 'label-hold';
+                const combProbText = combPred.available ? `${Math.round(combPred.p_eot * 100)}%` : '-';
+                const combMatch = combPred.available ? (combPred.decision === p.label) : false;
+                
+                // English-only model details
+                const enPred = p.predictions.en_only;
+                const enDecisionUpper = enPred.available ? enPred.decision.toUpperCase() : 'N/A';
+                const enDecisionClass = enPred.decision === 'eot' ? 'label-eot' : 'label-hold';
+                const enProbText = enPred.available ? `${Math.round(enPred.p_eot * 100)}%` : '-';
+                const enMatch = enPred.available ? (enPred.decision === p.label) : false;
+
+                // Match icon generators
+                const getMatchIcon = (isMatch) => {
+                    const iconClass = isMatch ? 'indicator-success' : 'indicator-fail';
+                    const iconChar = isMatch ? '✓' : '✗';
+                    return `<div class="indicator-icon ${iconClass}" style="width:16px; height:16px; font-size:0.5rem; display:inline-flex; align-items:center; justify-content:center;">${iconChar}</div>`;
+                };
+
+                tr.innerHTML = `
+                    <td style="font-weight: 700;">#${p.pause_index}</td>
+                    <td>${p.pause_start.toFixed(2)}s</td>
+                    <td>${(p.duration * 1000).toFixed(0)} ms</td>
+                    <td><span class="pause-card-label ${actualLabelClass}">${p.label}</span></td>
+                    <td>
+                        <span class="pause-card-label ${combDecisionClass}">${combDecisionUpper}</span>
+                        <span class="prob-badge ${combPred.p_eot >= combPred.threshold ? 'prob-badge-high' : 'prob-badge-low'}">${combProbText}</span>
+                    </td>
+                    <td>
+                        <span class="pause-card-label ${enDecisionClass}">${enDecisionUpper}</span>
+                        <span class="prob-badge ${enPred.p_eot >= enPred.threshold ? 'prob-badge-high' : 'prob-badge-low'}">${enProbText}</span>
+                    </td>
+                    <td style="text-align: center;">${getMatchIcon(combMatch)}</td>
+                    <td style="text-align: center;">${getMatchIcon(enMatch)}</td>
+                `;
+
+                tr.addEventListener('click', () => {
+                    selectPauseRow(p);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Auto-select first pause
+            selectPauseRow(pauses[0]);
+        }
+
+        function selectPauseRow(p) {
+            // Highlight row
+            document.querySelectorAll('#comparison-table-body tr').forEach(el => el.classList.remove('active'));
+            const activeRow = document.getElementById(`pause-row-${p.pause_index}`);
+            if (activeRow) activeRow.classList.add('active');
+
+            activePauseIndex = p.pause_index;
+            
+            // Seek to pause start in player
+            wavesurfer.setTime(p.pause_start);
+
+            // Show sections
+            document.getElementById('arena-section').style.display = 'flex';
+            document.getElementById('features-section').style.display = 'block';
+
+            // Update details and features
+            displayResults({
+                features: p.features,
+                predictions: p.predictions,
+                ground_truth_label: p.label
+            });
+        }
+
+        // Perform prediction on predefined pause
+        async function testPause(pauseIndex) {
+            if (!activeTurnId || !activeLang) return;
+            
+            // Show loading
+            document.getElementById('empty-workspace-state').style.display = 'none';
+            document.getElementById('arena-section').style.display = 'flex';
+            document.getElementById('features-section').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/predict/predefined', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        language: activeLang,
+                        turn_id: activeTurnId,
+                        pause_index: pauseIndex
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    displayResults(data);
+                }
+            } catch (err) {
+                console.error("Prediction failed", err);
+            }
+        }
+
+        // Display results in UI
+        function displayResults(data) {
+            // Update Feature table
+            const featureContainer = document.getElementById('feature-grid');
+            featureContainer.innerHTML = '';
+
+            data.features.forEach(feat => {
+                const card = document.createElement('div');
+                card.className = 'feature-card';
+                
+                let displayVal = 'N/A';
+                let barPct = 0;
+                let classList = 'feature-value nan';
+
+                if (feat.value !== null) {
+                    displayVal = feat.value.toFixed(4);
+                    classList = 'feature-value';
+                    
+                    // Determine percentage for helper progress bar
+                    // Standard scaling for aesthetics
+                    if (feat.name.includes('slope')) {
+                        barPct = Math.min(100, Math.max(0, (feat.value + 2) * 25)); // scale [-2, 2] to [0, 100]
+                    } else if (feat.name.includes('fraction') || feat.name.includes('ratio')) {
+                        barPct = Math.min(100, Math.max(0, feat.value * 100)); // scale [0, 1] to [0, 100]
+                    } else {
+                        barPct = Math.min(100, Math.max(0, (feat.value + 3) * 16)); // scale [-3, 3] to [0, 100]
+                    }
+                }
+
+                card.innerHTML = `
+                    <div class="feature-title-row">
+                        <span class="feature-name">${feat.label}</span>
+                        <i data-lucide="help-circle" class="feature-desc-trigger" title="${feat.desc}" style="width: 14px; height: 14px;"></i>
+                    </div>
+                    <div class="${classList}">${displayVal}</div>
+                    <div class="feature-desc-text">${feat.desc}</div>
+                    <div class="feature-card-glow">
+                        <div class="feature-bar-fill" style="width: ${barPct}%;"></div>
+                    </div>
+                `;
+                
+                featureContainer.appendChild(card);
+            });
+
+            // Update Models comparisons
+            updateModelResult('combined', data.predictions.combined, data.ground_truth_label);
+            updateModelResult('en_only', data.predictions.en_only, data.ground_truth_label);
+            
+            // Create icons
+            lucide.createIcons();
+        }
+
+        function updateModelResult(modelKey, pred, groundTruth) {
+            const card = document.getElementById(`model-card-${modelKey}`);
+            const badge = document.getElementById(`${modelKey}-decision-badge`);
+            const probText = document.getElementById(`${modelKey}-prob-text`);
+            const circle = document.getElementById(`${modelKey}-circle`);
+            const bar = document.getElementById(`${modelKey}-bar`);
+            const paramT = document.getElementById(`${modelKey}-param-t`);
+            const paramD = document.getElementById(`${modelKey}-param-d`);
+            const paramDur = document.getElementById(`${modelKey}-param-dur`);
+            const matchRow = document.getElementById(`${modelKey}-match`);
+
+            // Reset classes
+            card.classList.remove('decision-hold', 'decision-eot');
+
+            if (!pred || !pred.available) {
+                badge.className = 'decision-badge badge-hold';
+                badge.innerText = 'N/A';
+                probText.innerText = '-%';
+                circle.style.strokeDashoffset = 226;
+                bar.style.width = '0%';
+                paramT.innerText = '-';
+                paramD.innerText = '-';
+                paramDur.innerText = '-';
+                matchRow.style.display = 'none';
+                return;
+            }
+
+            // Set decision classes
+            const decisionUpper = pred.decision.toUpperCase();
+            badge.innerText = decisionUpper;
+            if (pred.decision === 'eot') {
+                badge.className = 'decision-badge badge-eot';
+                card.classList.add('decision-eot');
+            } else {
+                badge.className = 'decision-badge badge-hold';
+                card.classList.add('decision-hold');
+            }
+
+            // Set probability values
+            const pct = Math.round(pred.p_eot * 100);
+            probText.innerText = `${pct}%`;
+            
+            // Radial stroke-dashoffset (circumference = 2 * pi * r = 2 * 3.14159 * 36 = 226.2)
+            const offset = 226 - (226 * pred.p_eot);
+            circle.style.strokeDashoffset = offset;
+            bar.style.width = `${pct}%`;
+
+            // Set details
+            paramT.innerText = pred.threshold.toFixed(2);
+            paramD.innerText = `${pred.delay_ms.toFixed(0)} ms`;
+            paramDur.innerText = `${pred.pause_duration_ms.toFixed(0)} ms`;
+
+            // Set matches indicator
+            if (groundTruth) {
+                matchRow.style.display = 'flex';
+                const isMatch = pred.decision === groundTruth;
+                
+                const iconClass = isMatch ? 'indicator-success' : 'indicator-fail';
+                const iconChar = isMatch ? '✓' : '✗';
+                const textVal = isMatch 
+                    ? `Correct Match (Model decided ${decisionUpper}, Ground Truth is ${groundTruth.toUpperCase()})` 
+                    : `Mismatch (Model decided ${decisionUpper}, Ground Truth is ${groundTruth.toUpperCase()})`;
+                
+                matchRow.innerHTML = `
+                    <div class="indicator-icon ${iconClass}">${iconChar}</div>
+                    <div style="color: ${isMatch ? '#34d399' : '#f87171'}">${textVal}</div>
+                `;
+            } else {
+                matchRow.style.display = 'none';
+            }
+        }
+
+        // Setup UI handlers
+        function setupEventHandlers() {
+            // Mode switching
+            document.getElementById('mode-predefined-btn').addEventListener('click', () => {
+                setTestingMode('predefined');
+            });
+            document.getElementById('mode-custom-btn').addEventListener('click', () => {
+                setTestingMode('custom');
+            });
+
+            // Predefined searching/filtering
+            document.getElementById('lang-select').addEventListener('change', renderSampleList);
+            document.getElementById('turn-search').addEventListener('input', renderSampleList);
+
+            // Playback controls
+            document.getElementById('play-btn').addEventListener('click', () => {
+                wavesurfer.playPause();
+                const isPlaying = wavesurfer.isPlaying();
+                document.getElementById('play-icon').setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+                document.getElementById('play-btn').innerHTML = isPlaying 
+                    ? `<i data-lucide="pause"></i> Pause` 
+                    : `<i data-lucide="play"></i> Play`;
+                lucide.createIcons();
+            });
+
+            document.getElementById('zoom-in-btn').addEventListener('click', () => {
+                wavesurfer.zoom(wavesurfer.getZoom() + 10);
+            });
+            document.getElementById('zoom-out-btn').addEventListener('click', () => {
+                wavesurfer.zoom(Math.max(1, wavesurfer.getZoom() - 10));
+            });
+
+            // Recording controls
+            document.getElementById('record-btn').addEventListener('click', toggleRecording);
+
+            // File upload
+            document.getElementById('audio-upload').addEventListener('change', handleFileUpload);
+
+            // Analyze Custom button
+            document.getElementById('analyze-custom-btn').addEventListener('click', analyzeCustomAudio);
+
+            // Enable analyze button on input edit
+            document.getElementById('custom-pause-start').addEventListener('input', enableAnalyzeButton);
+            document.getElementById('custom-pause-dur').addEventListener('input', enableAnalyzeButton);
+        }
+
+        function setTestingMode(mode) {
+            testingMode = mode;
+            if (mode === 'predefined') {
+                document.getElementById('mode-predefined-btn').className = 'btn btn-primary';
+                document.getElementById('mode-custom-btn').className = 'btn btn-secondary';
+                document.getElementById('section-predefined').style.display = 'block';
+                document.getElementById('section-custom').style.display = 'none';
+                document.getElementById('pauses-list-section').style.display = activeTurnId ? 'block' : 'none';
+                
+                // Clear custom states
+                recordedWavBlob = null;
+                document.getElementById('upload-filename').innerText = 'No file selected';
+                document.getElementById('analyze-custom-btn').disabled = true;
+                
+                if (activeTurnId) {
+                    selectPredefinedTurn(activeTurnId);
+                } else {
+                    document.getElementById('empty-workspace-state').style.display = 'flex';
+                    document.getElementById('arena-section').style.display = 'none';
+                    document.getElementById('features-section').style.display = 'none';
+                }
+            } else {
+                document.getElementById('mode-predefined-btn').className = 'btn btn-secondary';
+                document.getElementById('mode-custom-btn').className = 'btn btn-primary';
+                document.getElementById('section-predefined').style.display = 'none';
+                document.getElementById('section-custom').style.display = 'block';
+                document.getElementById('pauses-list-section').style.display = 'none';
+                
+                // Clear workspace
+                document.getElementById('active-turn-title').innerHTML = `<i data-lucide="mic" style="color: var(--secondary);"></i> Custom Audio Analysis`;
+                lucide.createIcons();
+                wavesurfer.empty();
+                document.getElementById('play-btn').disabled = true;
+                
+                document.getElementById('empty-workspace-state').style.display = 'flex';
+                document.getElementById('arena-section').style.display = 'none';
+                document.getElementById('features-section').style.display = 'none';
+            }
+        }
+
+        // --- Custom Recording Logic ---
+        async function toggleRecording() {
+            const btn = document.getElementById('record-btn');
+            const status = document.getElementById('recording-status');
+
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                // Stop recording
+                mediaRecorder.stop();
+                btn.className = "btn btn-danger";
+                btn.innerHTML = `<i data-lucide="mic"></i> Start Recording`;
+                status.style.display = "none";
+                clearInterval(recordInterval);
+                lucide.createIcons();
+                return;
+            }
+
+            // Start recording
+            audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // We use standard AudioContext to capture PCM samples and encode to WAV
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+                
+                // Set up script processor (256 buffer size, 1 input channel, 1 output channel)
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+                
+                const channelData = [];
+                
+                processor.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    // Copy buffer samples
+                    const chunk = new Float32Array(input.length);
+                    chunk.set(input);
+                    channelData.push(chunk);
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                // Recording state
+                mediaRecorder = {
+                    state: "recording",
+                    stop: () => {
+                        mediaRecorder.state = "inactive";
+                        // Disconnect nodes
+                        source.disconnect(processor);
+                        processor.disconnect(audioContext.destination);
+                        
+                        // Stop all tracks on the stream to release mic
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Flatten channel data
+                        let totalLength = channelData.reduce((acc, val) => acc + val.length, 0);
+                        let result = new Float32Array(totalLength);
+                        let offset = 0;
+                        for (let chunk of channelData) {
+                            result.set(chunk, offset);
+                            offset += chunk.length;
+                        }
+                        
+                        // Create offline AudioBuffer
+                        const audioBuffer = audioContext.createBuffer(1, totalLength, audioContext.sampleRate);
+                        audioBuffer.copyToChannel(result, 0);
+                        
+                        // Encode to WAV
+                        recordedWavBlob = bufferToWav(audioBuffer);
+                        loadCustomWavBlob(recordedWavBlob, "RecordedVoice.wav");
+                    }
+                };
+
+                btn.className = "btn btn-recording";
+                btn.innerHTML = `<i data-lucide="square"></i> Stop Recording`;
+                status.style.display = "block";
+                status.innerText = "Recording: 0:00";
+                
+                recordStartTime = Date.now();
+                recordInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+                    const min = Math.floor(elapsed / 60);
+                    const sec = elapsed % 60;
+                    status.innerText = `Recording: ${min}:${sec.toString().padStart(2, '0')}`;
+                }, 1000);
+                
+                lucide.createIcons();
+
+            } catch (err) {
+                alert("Microphone access denied or error starting recording: " + err);
+                console.error(err);
+            }
+        }
+
+        // File upload handler
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('upload-filename').innerText = file.name;
+            recordedWavBlob = file;
+            loadCustomWavBlob(file, file.name);
+        }
+
+        // Load custom audio blob into Wavesurfer
+        function loadCustomWavBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            wavesurfer.load(url);
+            
+            document.getElementById('active-turn-title').innerHTML = `
+                <i data-lucide="mic" style="color: var(--secondary);"></i> ${filename}
+                <span class="lang-badge lang-en" style="margin-left: 0.5rem;">Custom</span>
+            `;
+            lucide.createIcons();
+
+            wavesurfer.once('ready', () => {
+                const duration = wavesurfer.getDuration();
+                document.getElementById('custom-pause-start').value = duration.toFixed(2);
+                enableAnalyzeButton();
+            });
+        }
+
+        function enableAnalyzeButton() {
+            if (recordedWavBlob) {
+                document.getElementById('analyze-custom-btn').disabled = false;
+            }
+        }
+
+        // Run analysis on custom uploaded/recorded audio
+        async function analyzeCustomAudio() {
+            if (!recordedWavBlob) return;
+
+            const pauseStart = parseFloat(document.getElementById('custom-pause-start').value);
+            const pauseDur = parseFloat(document.getElementById('custom-pause-dur').value);
+
+            // Show loading
+            document.getElementById('empty-workspace-state').style.display = 'none';
+            document.getElementById('arena-section').style.display = 'flex';
+            document.getElementById('features-section').style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('audio', recordedWavBlob, 'custom_input.wav');
+            formData.append('pause_start', pauseStart);
+            formData.append('pause_duration', pauseDur);
+
+            try {
+                const response = await fetch('/api/predict/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    displayResults(data);
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                console.error("Analysis failed", err);
+                alert("Failed to analyze audio.");
+            }
+        }
+
+        // --- Client-side WAV Encoder ---
+        function bufferToWav(buffer) {
+            let numOfChan = buffer.numberOfChannels,
+                length = buffer.length * numOfChan * 2 + 44,
+                bufferArr = new ArrayBuffer(length),
+                view = new DataView(bufferArr),
+                channels = [], i, sample,
+                offset = 0,
+                pos = 0;
+
+            // write WAV header
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16);         // chunk length
+            setUint16(1);          // sample format (raw PCM)
+            setUint16(numOfChan);
+            setUint32(buffer.sampleRate);
+            setUint32(buffer.sampleRate * 2 * numOfChan); // byte rate
+            setUint16(numOfChan * 2); // block align
+            setUint16(16);         // bits per sample
+
+            setUint32(0x61746164); // "data" chunk
+            setUint32(length - pos - 4); // chunk length
+
+            // write interleaved channels
+            for(i=0; i<buffer.numberOfChannels; i++)
+                channels.push(buffer.getChannelData(i));
+
+            while(pos < length - 2) {
+                for(i=0; i<numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([bufferArr], {type: "audio/wav"});
+
+            function setUint16(data) {
+                view.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                view.setUint32(pos, data, true);
+                pos += 4;
+            }
+        }
+    </script>
+</body>
+</html>
