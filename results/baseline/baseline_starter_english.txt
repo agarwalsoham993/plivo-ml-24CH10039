@@ -1,0 +1,5 @@
+turns=100  pauses=248  AUC=0.599
+BEST @ <= 5% interrupted turns:
+  mean response delay : 1190 ms   <-- your score, lower is better
+  interrupted turns   : 5.0%
+  operating point     : threshold=0.55, delay=600 ms
